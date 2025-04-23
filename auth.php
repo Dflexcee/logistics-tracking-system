@@ -81,13 +81,13 @@ execute_query($sql, [
 // Redirect based on role
 switch ($user['role']) {
     case 'superadmin':
-        header('Location: /dashboard/super-admin/index.php');
+        header('Location: dashboard/super-admin/index.php');
         break;
     case 'agent':
-        header('Location: /dashboard/agent/index.php');
+        header('Location: dashboard/agent/index.php');
         break;
     case 'manager':
-        header('Location: /dashboard/manager/index.php');
+        header('Location: dashboard/manager/index.php');
         break;
     default:
         $_SESSION['error'] = 'Invalid user role.';
