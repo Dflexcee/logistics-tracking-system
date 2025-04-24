@@ -2,267 +2,270 @@
 session_start();
 require_once '../../include/db.php';
 
-// Check if user is logged in and is superadmin
+// Check if user is logged in and is a super-admin
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
     header('Location: ../../login.php');
     exit();
 }
 
-// Query consignments
-$sql = "SELECT id, tracking_number, sender_name, receiver_name, status, created_at 
-        FROM consignments 
-        ORDER BY created_at DESC";
-$result = execute_query($sql);
-
-$consignments = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $consignments[] = $row;
-    }
-}
+// Get all consignments with sender and receiver information
+$sql = "SELECT c.*, s.name as sender_name, s.phone as sender_phone, 
+        r.name as receiver_name, r.phone as receiver_phone,
+        u.name as agent_name,
+        th.status as current_status,
+        th.location as current_location,
+        th.created_at as status_date
+        FROM consignments c
+        JOIN senders s ON c.sender_id = s.id
+        JOIN receivers r ON c.receiver_id = r.id
+        LEFT JOIN users u ON c.agent_id = u.id
+        LEFT JOIN (
+            SELECT consignment_id, status, location, created_at
+            FROM tracking_history
+            WHERE (consignment_id, created_at) IN (
+                SELECT consignment_id, MAX(created_at)
+                FROM tracking_history
+                GROUP BY consignment_id
+            )
+        ) th ON c.id = th.consignment_id
+        ORDER BY c.created_at DESC";
+$result = $conn->query($sql);
 ?>
+
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Consignments - FLEXCEE Logistics</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Manage Consignments - Super Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1a365d',
-                        secondary: '#2d3748',
-                        accent: '#e53e3e'
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="h-full bg-gray-100 dark:bg-gray-900">
-    <!-- Top Navbar -->
-    <nav class="bg-white dark:bg-gray-800 shadow-lg fixed w-full z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-primary dark:text-white">Manage Consignments</h1>
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="index.php" class="text-xl font-bold text-gray-800">Super Admin Dashboard</a>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <!-- Dark Mode Toggle -->
-                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-moon dark:hidden text-gray-600"></i>
-                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
-                    </button>
-                    <!-- User Menu -->
-                    <div class="relative">
-                        <button class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">
-                            <span><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
+                <div class="flex items-center">
+                    <div class="ml-3 relative">
+                        <div class="flex items-center">
+                            <a href="profile.php" class="text-gray-700 mr-4">Profile</a>
+                            <a href="../../logout.php" class="text-red-600 hover:text-red-800">Logout</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg mt-16 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out z-10">
-        <div class="h-full overflow-y-auto py-4">
-            <nav class="space-y-2 px-2">
-                <a href="index.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="agents.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-users"></i>
-                    <span>Agents</span>
-                </a>
-                <a href="consignments.php" class="flex items-center space-x-2 text-primary dark:text-blue-400 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-box"></i>
-                    <span>Consignments</span>
-                </a>
-                <a href="users.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Users</span>
-                </a>
-                <a href="settings.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="../../logout.php" class="flex items-center space-x-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
+    <!-- Add this after the navigation -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline"><?php echo $_SESSION['success']; ?></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <button onclick="this.parentElement.parentElement.remove()" class="text-green-500 hover:text-green-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
         </div>
-    </aside>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
 
-    <!-- Mobile Menu Button -->
-    <button id="mobileMenuButton" class="fixed bottom-4 right-4 md:hidden bg-primary text-white p-3 rounded-full shadow-lg z-20">
-        <i class="fas fa-bars"></i>
-    </button>
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline"><?php echo $_SESSION['error']; ?></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
 
     <!-- Main Content -->
-    <main class="md:ml-64 pt-16 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header with Add Button -->
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Consignments List</h2>
-                <a href="create-consignment.php" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors">
-                    <i class="fas fa-plus mr-2"></i> New Consignment
-                </a>
+    <div class="flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white shadow-lg h-screen">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="index.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-home mr-2"></i> Dashboard
+                    </a>
+                    <a href="consignments.php" class="block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <i class="fas fa-box mr-2"></i> Consignments
+                    </a>
+                    <a href="agents.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-users mr-2"></i> Agents
+                    </a>
+                    <a href="settings.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-cog mr-2"></i> Settings
+                    </a>
+                </nav>
             </div>
+        </div>
 
-            <?php if (isset($_SESSION['success'])): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['success']); ?></span>
-            </div>
-            <?php unset($_SESSION['success']); endif; ?>
+        <!-- Content Area -->
+        <div class="flex-1 p-8">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            All Consignments
+                        </h3>
+                        <a href="create-consignment.php" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            <i class="fas fa-plus mr-2"></i> New Consignment
+                        </a>
+                    </div>
 
-            <?php if (isset($_SESSION['error'])): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['error']); ?></span>
-            </div>
-            <?php unset($_SESSION['error']); endif; ?>
-
-            <!-- Consignments Table -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tracking Number</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sender</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Receiver</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created At</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <?php if (empty($consignments)): ?>
-                            <tr>
-                                <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                    No consignments found
-                                </td>
-                            </tr>
-                            <?php else: ?>
-                                <?php foreach ($consignments as $consignment): ?>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                        <?php echo htmlspecialchars($consignment['id']); ?>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking #</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receiver</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php while ($row = $result->fetch_assoc()): ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php echo htmlspecialchars($row['tracking_number']); ?>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                        <?php echo htmlspecialchars($consignment['tracking_number']); ?>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php echo htmlspecialchars($row['sender_name']); ?><br>
+                                        <small class="text-gray-500"><?php echo htmlspecialchars($row['sender_phone']); ?></small>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                        <?php echo htmlspecialchars($consignment['sender_name']); ?>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                        <?php echo htmlspecialchars($consignment['receiver_name']); ?>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php echo htmlspecialchars($row['receiver_name']); ?><br>
+                                        <small class="text-gray-500"><?php echo htmlspecialchars($row['receiver_phone']); ?></small>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            <?php
-                                            switch($consignment['status']) {
-                                                case 'On Transit':
-                                                    echo 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-                                                    break;
-                                                case 'Out for Delivery':
-                                                    echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-                                                    break;
-                                                case 'Delivered':
-                                                    echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                    break;
-                                                case 'On Hold':
-                                                    echo 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-                                                    break;
-                                                default:
-                                                    echo 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-                                            }
+                                            <?php 
+                                            $status = $row['current_status'] ?? 'Pending';
+                                            echo $status === 'Delivered' ? 'bg-green-100 text-green-800' : 
+                                                ($status === 'In Transit' ? 'bg-blue-100 text-blue-800' : 
+                                                ($status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                                'bg-gray-100 text-gray-800')); 
                                             ?>">
-                                            <?php echo htmlspecialchars($consignment['status']); ?>
+                                            <?php echo htmlspecialchars($status); ?>
                                         </span>
+                                        <?php if ($row['status_date']): ?>
+                                            <br>
+                                            <small class="text-gray-500">
+                                                <?php echo date('M d, Y H:i', strtotime($row['status_date'])); ?>
+                                            </small>
+                                        <?php endif; ?>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                        <?php echo date('M d, Y', strtotime($consignment['created_at'])); ?>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php echo $row['current_location'] ? htmlspecialchars($row['current_location']) : 'N/A'; ?>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        <div class="flex items-center space-x-2">
-                                            <a href="view-consignment.php?id=<?php echo $consignment['id']; ?>" 
-                                               class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                                <i class="fas fa-eye mr-1.5"></i>
-                                                View
-                                            </a>
-                                            <a href="update-status.php?id=<?php echo $consignment['id']; ?>" 
-                                               class="inline-flex items-center px-3 py-1.5 bg-yellow-500 text-gray-900 text-sm font-medium rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors">
-                                                <i class="fas fa-edit mr-1.5"></i>
-                                                Edit
-                                            </a>
-                                            <?php if ($_SESSION['user_role'] === 'superadmin'): ?>
-                                            <a href="delete-consignment.php?id=<?php echo $consignment['id']; ?>" 
-                                               onclick="return confirm('Are you sure you want to delete this consignment?')"
-                                               class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
-                                                <i class="fas fa-trash mr-1.5"></i>
-                                                Delete
-                                            </a>
-                                            <?php endif; ?>
-                                        </div>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php echo $row['agent_name'] ? htmlspecialchars($row['agent_name']) : 'Unassigned'; ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <?php echo date('M d, Y', strtotime($row['created_at'])); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="view-consignment.php?id=<?php echo $row['id']; ?>" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="edit-consignment.php?id=<?php echo $row['id']; ?>" class="text-yellow-600 hover:text-yellow-900 mr-3">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button onclick="showAssignModal(<?php echo $row['id']; ?>, <?php echo $row['agent_id'] ? $row['agent_id'] : 'null'; ?>)" 
+                                                class="text-green-600 hover:text-green-900 mr-3">
+                                            <i class="fas fa-user-plus"></i> Assign
+                                        </button>
+                                        <button onclick="confirmDelete(<?php echo $row['id']; ?>)" 
+                                                class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 
-    <!-- Footer -->
-    <footer class="bg-white dark:bg-gray-800 shadow-lg mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <p class="text-center text-gray-600 dark:text-gray-400">
-                © FLEXCEE Logistics 2025
-            </p>
+    <!-- Assign Agent Modal -->
+    <div id="assignModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Agent</h3>
+                <form action="assign-agent.php" method="POST" class="space-y-4">
+                    <input type="hidden" name="consignment_id" id="modalConsignmentId">
+                    
+                    <div>
+                        <label for="agent_id" class="block text-sm font-medium text-gray-700">Select Agent</label>
+                        <select name="agent_id" id="modalAgentId" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                            <option value="">Select an agent</option>
+                            <?php
+                            // Get all active agents
+                            $agents_sql = "SELECT id, name FROM users WHERE role = 'agent' AND status = 'active'";
+                            $agents_result = $conn->query($agents_sql);
+                            while ($agent = $agents_result->fetch_assoc()) {
+                                echo '<option value="' . $agent['id'] . '">' . htmlspecialchars($agent['name']) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="hideAssignModal()"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-800">
+                            Assign Agent
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </footer>
+    </div>
 
     <script>
-        // Dark Mode Toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const html = document.documentElement;
-
-        // Check for saved dark mode preference
-        if (localStorage.getItem('darkMode') === 'true') {
-            html.classList.add('dark');
+        function showAssignModal(consignmentId, currentAgentId) {
+            document.getElementById('modalConsignmentId').value = consignmentId;
+            document.getElementById('modalAgentId').value = currentAgentId;
+            document.getElementById('assignModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
 
-        darkModeToggle.addEventListener('click', () => {
-            html.classList.toggle('dark');
-            localStorage.setItem('darkMode', html.classList.contains('dark'));
-        });
+        function hideAssignModal() {
+            document.getElementById('assignModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
 
-        // Mobile Menu Toggle
-        const mobileMenuButton = document.getElementById('mobileMenuButton');
-        const sidebar = document.querySelector('aside');
+        function confirmDelete(consignmentId) {
+            if (confirm('Are you sure you want to delete this consignment? This action cannot be undone.')) {
+                window.location.href = 'delete-consignment.php?id=' + consignmentId;
+            }
+        }
 
-        mobileMenuButton.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth < 768 && 
-                !sidebar.contains(e.target) && 
-                !mobileMenuButton.contains(e.target)) {
-                sidebar.classList.add('-translate-x-full');
+        // Close modal when clicking outside
+        document.getElementById('assignModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideAssignModal();
             }
         });
     </script>

@@ -1,5 +1,13 @@
 <?php
 session_start();
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
+$is_agent = ($_SESSION['user_role'] === 'agent');
+
 require_once '../../include/db.php';
 
 // Check if user is logged in and is superadmin
@@ -74,6 +82,14 @@ $admin_name = $_SESSION['user_name'] ?? 'Admin';
                 <a href="consignments.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
                     <i class="fas fa-box"></i>
                     <span>Consignments</span>
+                </a>
+                <a href="update-status.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Update Status</span>
+                </a>
+                <a href="payment-info.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Payment Information</span>
                 </a>
                 <a href="users.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
                     <i class="fas fa-user-cog"></i>

@@ -1,135 +1,76 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
-    header("Location: ../../login.php");
-    exit();
-}
-
-$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
-$is_agent = ($_SESSION['user_role'] === 'agent');
-
 require_once '../../include/db.php';
 
-// Check if user is logged in and is a super admin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
+// Check if user is logged in and is an agent
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'agent') {
     header('Location: ../../login.php');
     exit();
 }
 
+$agent_id = $_SESSION['user_id'];
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Get form data
-        $sender_name = $_POST['sender_name'];
-        $sender_phone = $_POST['sender_phone'];
-        $pickup_location = $_POST['pickup_location'];
-        $receiver_name = $_POST['receiver_name'];
-        $receiver_phone = $_POST['receiver_phone'];
-        $drop_location = $_POST['drop_location'];
-        $item_description = $_POST['item_description'];
-        $weight_kg = $_POST['weight_kg'];
-        $package_type = $_POST['package_type'];
-        $amount_paid = $_POST['amount_paid'] ?? 0;
-        $paid_by = $_POST['paid_by'];
-        $payment_method = $_POST['payment_method'];
-        $payment_status = $_POST['payment_status'];
-        $agent_id = $_POST['agent_id'] ?? null;
-        $send_date = $_POST['send_date'];
-        $pickup_date = $_POST['pickup_date'];
-
-        // Generate tracking number
-        $tracking_number = 'TRK' . date('Ymd') . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+        // Start transaction
+        $conn->begin_transaction();
 
         // Insert sender information
         $sender_sql = "INSERT INTO senders (name, phone, address) VALUES (?, ?, ?)";
         $sender_stmt = $conn->prepare($sender_sql);
-        if ($sender_stmt === false) {
-            throw new Exception("Sender preparation failed: " . $conn->error);
-        }
         $sender_stmt->bind_param("sss", $sender_name, $sender_phone, $pickup_location);
-        if (!$sender_stmt->execute()) {
-            throw new Exception("Sender execution failed: " . $sender_stmt->error);
-        }
+        $sender_stmt->execute();
         $sender_id = $conn->insert_id;
-        $sender_stmt->close();
 
         // Insert receiver information
         $receiver_sql = "INSERT INTO receivers (name, phone, address) VALUES (?, ?, ?)";
         $receiver_stmt = $conn->prepare($receiver_sql);
-        if ($receiver_stmt === false) {
-            throw new Exception("Receiver preparation failed: " . $conn->error);
-        }
         $receiver_stmt->bind_param("sss", $receiver_name, $receiver_phone, $drop_location);
-        if (!$receiver_stmt->execute()) {
-            throw new Exception("Receiver execution failed: " . $receiver_stmt->error);
-        }
+        $receiver_stmt->execute();
         $receiver_id = $conn->insert_id;
-        $receiver_stmt->close();
 
-        // Insert consignment
-        $sql = "INSERT INTO consignments (
-                    tracking_number, sender_id, receiver_id, agent_id,
-                    weight, dimensions, package_type, special_instructions,
-                    status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())";
+        // Generate tracking number
+        $tracking_number = generateTrackingNumber();
 
-        $stmt = $conn->prepare($sql);
-        if ($stmt === false) {
-            throw new Exception("Consignment preparation failed: " . $conn->error);
-        }
-        $stmt->bind_param("siiidsss", 
-            $tracking_number, $sender_id, $receiver_id, $agent_id,
-            $weight_kg, $item_description, $package_type, $special_instructions
-        );
+        // Insert consignment information
+        $consignment_sql = "INSERT INTO consignments (tracking_number, sender_id, receiver_id, agent_id, weight, dimensions, package_type, special_instructions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+        $consignment_stmt = $conn->prepare($consignment_sql);
+        $consignment_stmt->bind_param("siiidsss", $tracking_number, $sender_id, $receiver_id, $agent_id, $weight, $dimensions, $package_type, $special_instructions);
+        $consignment_stmt->execute();
+        $consignment_id = $conn->insert_id;
 
-        if ($stmt->execute()) {
-            $consignment_id = $conn->insert_id;
-            
-            // Add initial tracking status
-            $status = "Consignment Created";
-            $notes = "Consignment created with tracking number: " . $tracking_number;
-            
-            $history_sql = "INSERT INTO tracking_history (consignment_id, status, notes, created_at) 
-                          VALUES (?, ?, ?, NOW())";
-            $history_stmt = $conn->prepare($history_sql);
-            $history_stmt->bind_param("iss", $consignment_id, $status, $notes);
-            $history_stmt->execute();
+        // Insert initial tracking history
+        $tracking_sql = "INSERT INTO tracking_history (consignment_id, status, location, notes) VALUES (?, 'Pending', ?, 'Consignment created')";
+        $tracking_stmt = $conn->prepare($tracking_sql);
+        $tracking_stmt->bind_param("is", $consignment_id, $pickup_location);
+        $tracking_stmt->execute();
 
-            // Add payment status to tracking history if payment information is provided
-            if ($amount_paid > 0) {
-                $payment_notes = "Amount: ₦" . number_format($amount_paid, 2);
-                
-                $payment_history_sql = "INSERT INTO tracking_history (consignment_id, status, notes, created_at) 
-                                      VALUES (?, 'Payment Information', ?, NOW())";
-                $payment_history_stmt = $conn->prepare($payment_history_sql);
-                $payment_history_stmt->bind_param("is", $consignment_id, $payment_notes);
-                $payment_history_stmt->execute();
-            }
+        // Commit transaction
+        $conn->commit();
 
-            $_SESSION['success'] = "Consignment created successfully with tracking number: " . $tracking_number;
-            header("Location: consignments.php");
-            exit();
-        } else {
-            throw new Exception("Error creating consignment: " . $conn->error);
-        }
-    } catch (Exception $e) {
-        $_SESSION['error'] = "Error: " . $e->getMessage();
-        header("Location: create-consignment.php");
+        // Redirect to consignments list page
+        header("Location: consignments.php");
         exit();
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+        $error = "Error creating consignment: " . $e->getMessage();
     }
 }
 
-// Get list of agents for the dropdown
-$agents_sql = "SELECT id, name FROM users WHERE role = 'agent' AND status = 'active'";
-$agents_result = $conn->query($agents_sql);
-$agents = $agents_result->fetch_all(MYSQLI_ASSOC);
+function generateTrackingNumber() {
+    $prefix = 'TRK';
+    $random = str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+    return $prefix . $random;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Consignment - Super Admin Dashboard</title>
+    <title>Create Consignment - Agent Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -140,7 +81,7 @@ $agents = $agents_result->fetch_all(MYSQLI_ASSOC);
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
-                        <a href="index.php" class="text-xl font-bold text-gray-800">Super Admin Dashboard</a>
+                        <a href="index.php" class="text-xl font-bold text-gray-800">Agent Dashboard</a>
                     </div>
                 </div>
                 <div class="flex items-center">
@@ -170,8 +111,14 @@ $agents = $agents_result->fetch_all(MYSQLI_ASSOC);
                     <a href="create-consignment.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
                         <i class="fas fa-plus mr-2"></i> New Consignment
                     </a>
-                    <a href="agents.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
-                        <i class="fas fa-users mr-2"></i> Agents
+                    <a href="edit-consignment.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-edit mr-2"></i> Edit Consignment
+                    </a>
+                    <a href="update-status.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-truck mr-2"></i> Update Status
+                    </a>
+                    <a href="print.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-print mr-2"></i> Print
                     </a>
                     <a href="profile.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
                         <i class="fas fa-user mr-2"></i> Profile
@@ -200,23 +147,6 @@ $agents = $agents_result->fetch_all(MYSQLI_ASSOC);
                     </div>
 
                     <form method="POST" class="space-y-6">
-                        <!-- Agent Selection -->
-                        <div class="space-y-4">
-                            <h4 class="text-md font-medium text-gray-700">Assign to Agent</h4>
-                            <div>
-                                <label for="agent_id" class="block text-sm font-medium text-gray-700">Select Agent</label>
-                                <select name="agent_id" id="agent_id" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="">Select an agent</option>
-                                    <?php foreach ($agents as $agent): ?>
-                                        <option value="<?php echo $agent['id']; ?>" <?php echo (isset($_POST['agent_id']) && $_POST['agent_id'] == $agent['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($agent['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
                         <!-- Sender Information -->
                         <div class="space-y-4">
                             <h4 class="text-md font-medium text-gray-700">Sender Information</h4>
@@ -272,28 +202,31 @@ $agents = $agents_result->fetch_all(MYSQLI_ASSOC);
                             <h4 class="text-md font-medium text-gray-700">Package Information</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label for="weight_kg" class="block text-sm font-medium text-gray-700">Weight (kg)</label>
-                                    <input type="number" step="0.01" name="weight_kg" id="weight_kg" required
-                                        value="<?php echo isset($_POST['weight_kg']) ? htmlspecialchars($_POST['weight_kg']) : ''; ?>"
+                                    <label for="weight" class="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                                    <input type="number" step="0.01" name="weight" id="weight" required
+                                        value="<?php echo isset($_POST['weight']) ? htmlspecialchars($_POST['weight']) : ''; ?>"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 </div>
                                 <div>
-                                    <label for="item_description" class="block text-sm font-medium text-gray-700">Item Description</label>
-                                    <input type="text" name="item_description" id="item_description" required
-                                        value="<?php echo isset($_POST['item_description']) ? htmlspecialchars($_POST['item_description']) : ''; ?>"
+                                    <label for="dimensions" class="block text-sm font-medium text-gray-700">Dimensions</label>
+                                    <input type="text" name="dimensions" id="dimensions" required
+                                        value="<?php echo isset($_POST['dimensions']) ? htmlspecialchars($_POST['dimensions']) : ''; ?>"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 </div>
                                 <div>
-                                    <label for="send_date" class="block text-sm font-medium text-gray-700">Send Date</label>
-                                    <input type="date" name="send_date" id="send_date" required
-                                        value="<?php echo isset($_POST['send_date']) ? htmlspecialchars($_POST['send_date']) : ''; ?>"
+                                    <label for="package_type" class="block text-sm font-medium text-gray-700">Package Type</label>
+                                    <select name="package_type" id="package_type" required
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <option value="Standard">Standard</option>
+                                        <option value="Express">Express</option>
+                                        <option value="Fragile">Fragile</option>
+                                        <option value="Bulk">Bulk</option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <label for="pickup_date" class="block text-sm font-medium text-gray-700">Pickup Date</label>
-                                    <input type="date" name="pickup_date" id="pickup_date" required
-                                        value="<?php echo isset($_POST['pickup_date']) ? htmlspecialchars($_POST['pickup_date']) : ''; ?>"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <label for="special_instructions" class="block text-sm font-medium text-gray-700">Special Instructions</label>
+                                    <textarea name="special_instructions" id="special_instructions" rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"><?php echo isset($_POST['special_instructions']) ? htmlspecialchars($_POST['special_instructions']) : ''; ?></textarea>
                                 </div>
                             </div>
                         </div>

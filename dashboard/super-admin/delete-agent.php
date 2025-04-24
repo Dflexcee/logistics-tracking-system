@@ -1,6 +1,12 @@
 <?php
 session_start();
-require_once '../../include/db.php';
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
+$is_agent = ($_SESSION['user_role'] === 'agent');
 
 // Enable error reporting
 error_reporting(E_ALL);

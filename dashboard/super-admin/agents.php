@@ -1,12 +1,14 @@
 <?php
 session_start();
-require_once '../../include/db.php';
-
-// Check if user is logged in and is superadmin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
-    header('Location: ../../login.php');
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+    header("Location: ../../login.php");
     exit();
 }
+
+$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
+$is_agent = ($_SESSION['user_role'] === 'agent');
+
+require_once '../../include/db.php';
 
 // Query agents
 $sql = "SELECT id, name, email, status, created_at FROM users WHERE role = 'agent' ORDER BY created_at DESC";

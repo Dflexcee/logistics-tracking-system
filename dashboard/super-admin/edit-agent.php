@@ -1,16 +1,16 @@
 <?php
 session_start();
-require_once '../../include/db.php';
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
+$is_agent = ($_SESSION['user_role'] === 'agent');
 
 // Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// Check if user is logged in and is superadmin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
-    header('Location: ../../login.php');
-    exit();
-}
 
 // Check if agent ID is provided
 if (!isset($_GET['id'])) {

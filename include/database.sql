@@ -66,39 +66,59 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Create consignments table
-CREATE TABLE IF NOT EXISTS consignments (
+-- Create senders table
+CREATE TABLE IF NOT EXISTS senders (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    tracking_number VARCHAR(50) NOT NULL UNIQUE,
-    sender_name VARCHAR(100) NOT NULL,
-    sender_phone VARCHAR(20) NOT NULL,
-    receiver_name VARCHAR(100) NOT NULL,
-    receiver_phone VARCHAR(20) NOT NULL,
-    pickup_location TEXT NOT NULL,
-    drop_location TEXT NOT NULL,
-    agent_id INT NULL,
-    status ENUM('On Transit', 'Out for Delivery', 'On Hold', 'Delivered', 'Clearance Pending') NOT NULL DEFAULT 'On Transit',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_tracking_number (tracking_number),
-    INDEX idx_status (status),
-    INDEX idx_agent_id (agent_id),
-    INDEX idx_created_at (created_at)
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Create tracking_updates table
-CREATE TABLE IF NOT EXISTS tracking_updates (
+-- Create receivers table
+CREATE TABLE IF NOT EXISTS receivers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create consignments table
+CREATE TABLE IF NOT EXISTS consignments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tracking_number VARCHAR(50) UNIQUE NOT NULL,
+    sender_id INT,
+    receiver_id INT,
+    agent_id INT,
+    weight DECIMAL(10,2),
+    dimensions VARCHAR(50),
+    description TEXT,
+    package_type VARCHAR(50),
+    special_instructions TEXT,
+    status ENUM('pending', 'in_transit', 'delivered', 'cancelled') DEFAULT 'pending',
+    amount_paid DECIMAL(10,2) DEFAULT 0.00,
+    payment_status ENUM('pending', 'paid') DEFAULT 'pending',
+    payment_method ENUM('cash', 'bank_transfer', 'card') DEFAULT NULL,
+    paid_by ENUM('sender', 'receiver') DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES senders(id),
+    FOREIGN KEY (receiver_id) REFERENCES receivers(id),
+    FOREIGN KEY (agent_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create tracking_history table
+CREATE TABLE IF NOT EXISTS tracking_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     consignment_id INT NOT NULL,
     status VARCHAR(50) NOT NULL,
-    comment TEXT NULL,
-    updated_by INT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    location TEXT NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (consignment_id) REFERENCES consignments(id) ON DELETE CASCADE,
-    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_consignment_id (consignment_id),
-    INDEX idx_timestamp (timestamp),
-    INDEX idx_status (status)
+    INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create contact_messages table

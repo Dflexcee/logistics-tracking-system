@@ -1,12 +1,14 @@
 <?php
 session_start();
-require_once '../../include/db.php';
-
-// Check if user is logged in and is superadmin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
-    header('Location: ../../login.php');
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+    header("Location: ../../login.php");
     exit();
 }
+
+$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
+$is_agent = ($_SESSION['user_role'] === 'agent');
+
+require_once '../../include/db.php';
 
 // Get all active agents
 $agent_sql = "SELECT id, name FROM users WHERE role = 'agent' AND status = 'active' ORDER BY name";
@@ -170,6 +172,16 @@ unset($_SESSION['error']);
                                     <input type="text" name="drop_location" required
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                                 </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Send Date</label>
+                                    <input type="date" name="send_date" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pickup/Delivery Date</label>
+                                    <input type="date" name="pickup_date" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                </div>
                             </div>
                         </div>
 
@@ -188,9 +200,14 @@ unset($_SESSION['error']);
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount Paid</label>
-                                    <input type="number" name="amount_paid" required min="0" step="0.01"
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Package Type</label>
+                                    <select name="package_type" required
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="Standard">Standard</option>
+                                        <option value="Express">Express</option>
+                                        <option value="Fragile">Fragile</option>
+                                        <option value="Bulk">Bulk</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -258,6 +275,58 @@ unset($_SESSION['error']);
                                     <option value="Delivered">Delivered</option>
                                     <option value="Clearance Pending">Clearance Pending</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <!-- Package Information -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold mb-4">Package Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Dimensions (L x W x H)</label>
+                                    <input type="text" name="dimensions" class="w-full px-4 py-2 border rounded-lg" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
+                                    <textarea name="special_instructions" class="w-full px-4 py-2 border rounded-lg"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Payment Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount Paid</label>
+                                    <input type="number" name="amount_paid" required min="0" step="0.01"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Paid By</label>
+                                    <select name="paid_by" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="sender">Sender</option>
+                                        <option value="receiver">Receiver</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
+                                    <select name="payment_method" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="cash">Cash</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="card">Card</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Status</label>
+                                    <select name="payment_status" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="pending">Pending</option>
+                                        <option value="paid">Paid</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

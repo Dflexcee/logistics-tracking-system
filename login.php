@@ -3,7 +3,20 @@ session_start();
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    // Redirect based on role
+    switch ($_SESSION['user_role']) {
+        case 'superadmin':
+            header('Location: dashboard/super-admin/index.php');
+            break;
+        case 'agent':
+            header('Location: dashboard/agent/index.php');
+            break;
+        case 'manager':
+            header('Location: dashboard/manager/index.php');
+            break;
+        default:
+            header('Location: dashboard.php');
+    }
     exit();
 }
 
@@ -53,7 +66,7 @@ unset($_SESSION['error']);
                 </div>
                 <?php endif; ?>
 
-                <form action="auth.php" method="POST" class="space-y-6">
+                <form method="POST" action="auth.php" class="space-y-6" id="loginForm">
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                         <div class="relative">
@@ -78,19 +91,6 @@ unset($_SESSION['error']);
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="remember" name="remember"
-                                   class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-                            <label for="remember" class="ml-2 block text-sm text-gray-700">
-                                Remember me
-                            </label>
-                        </div>
-                        <a href="#" class="text-sm text-primary hover:text-blue-800">
-                            Forgot password?
-                        </a>
-                    </div>
-
                     <button type="submit"
                             class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
                         Sign In
@@ -106,11 +106,9 @@ unset($_SESSION['error']);
     </footer>
 
     <script>
-        // Add loading state to form submission
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const button = this.querySelector('button[type="submit"]');
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Signing in...';
-            button.disabled = true;
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            console.log('Login form submitted');
+            // Let the form submit normally
         });
     </script>
 </body>
