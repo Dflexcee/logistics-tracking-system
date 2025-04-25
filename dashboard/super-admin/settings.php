@@ -106,10 +106,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("File size too large. Maximum size is 5MB.");
             }
             
+            // Create upload directory if it doesn't exist
+            $upload_dir = '../../assets/images/logos/';
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            
             // Generate unique filename
             $extension = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
             $filename = 'logo_' . time() . '.' . $extension;
-            $upload_path = '../../assets/images/logos/' . $filename;
+            $upload_path = $upload_dir . $filename;
             
             if (move_uploaded_file($_FILES['logo']['tmp_name'], $upload_path)) {
                 // Delete old logo if exists
@@ -122,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $logo_url = 'assets/images/logos/' . $filename;
             } else {
-                throw new Exception("Failed to upload logo.");
+                throw new Exception("Failed to upload logo. Please check directory permissions.");
             }
         }
         
@@ -280,18 +286,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Company Logo</label>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="logo">
+                                Company Logo
+                            </label>
                             <?php if (!empty($company_settings['logo_url'])): ?>
                                 <div class="mb-2">
                                     <img src="../../<?php echo htmlspecialchars($company_settings['logo_url']); ?>" 
-                                         alt="Current Logo" 
-                                         class="h-20 w-20 object-cover rounded-lg">
+                                         alt="Company Logo" 
+                                         class="max-h-32 mb-2">
                                 </div>
                             <?php endif; ?>
-                            <input type="file" name="logo" accept="image/*" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                            <p class="text-sm text-gray-500 mt-1">Upload a new logo (JPG, PNG, or GIF, max 5MB)</p>
+                            <input type="file" 
+                                   name="logo" 
+                                   id="logo" 
+                                   accept="image/jpeg,image/png,image/gif"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <p class="text-gray-600 text-xs mt-1">Max file size: 5MB. Allowed formats: JPG, PNG, GIF</p>
                         </div>
 
                         <div>

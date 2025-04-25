@@ -123,6 +123,9 @@ if (!$recent_consignments) {
                     <a href="consignments.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
                         <i class="fas fa-box mr-2"></i> Consignments
                     </a>
+                    <a href="tickets.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
+                        <i class="fas fa-ticket-alt mr-2"></i> Tickets
+                    </a>
                     <a href="create-consignment.php" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg">
                         <i class="fas fa-plus mr-2"></i> New Consignment
                     </a>

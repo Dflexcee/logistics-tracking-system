@@ -1,9 +1,65 @@
+<?php
+require_once 'include/db.php';
+
+// Get company details
+$company_sql = "SELECT * FROM company_details LIMIT 1";
+$company_result = $conn->query($company_sql);
+$company = $company_result->fetch_assoc();
+
+$success = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $message = $_POST['message'];
+    
+    // Insert message into database
+    $sql = "INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sss", $name, $email, $message);
+    
+    if ($stmt->execute()) {
+        // Send confirmation email
+        $to = $email;
+        $subject = "Thank you for contacting " . $company['company_name'];
+        $headers = "From: " . $company['email'] . "\r\n";
+        $headers .= "Reply-To: " . $company['email'] . "\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        
+        $email_content = "
+        <html>
+        <body>
+            <img src='" . $company['logo'] . "' alt='" . $company['company_name'] . "' style='max-width: 200px;'><br>
+            <h2>Thank you for contacting " . $company['company_name'] . "</h2>
+            <p>We have received your message and will get back to you shortly.</p>
+            <p>Here's a copy of your message:</p>
+            <div style='background-color: #f5f5f5; padding: 15px; margin: 10px 0;'>
+                " . nl2br(htmlspecialchars($message)) . "
+            </div>
+            <p>If you have any further questions, please don't hesitate to contact us.</p>
+            <p>Best regards,<br>" . $company['company_name'] . "<br>Phone: " . $company['phone'] . "</p>
+        </body>
+        </html>";
+        
+        if (mail($to, $subject, $email_content, $headers)) {
+            $success = "Your message has been sent successfully! We'll get back to you soon.";
+        } else {
+            $error = "Message saved but failed to send confirmation email.";
+        }
+    } else {
+        $error = "Failed to send message. Please try again.";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - Cargorover</title>
+    <title>Contact Us - <?php echo htmlspecialchars($company['company_name']); ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
@@ -111,22 +167,34 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div>
                     <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Send Us a Message</h2>
-                    <form class="space-y-6">
+                    <?php if ($success): ?>
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <span class="block sm:inline"><?php echo htmlspecialchars($success); ?></span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($error): ?>
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <span class="block sm:inline"><?php echo htmlspecialchars($error); ?></span>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" class="space-y-6">
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 mb-2">Your Name</label>
-                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
+                            <input type="text" name="name" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
                         </div>
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 mb-2">Your Email</label>
-                            <input type="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
+                            <input type="email" name="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
                         </div>
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 mb-2">Subject</label>
-                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
+                            <input type="text" name="subject" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
                         </div>
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 mb-2">Message</label>
-                            <textarea class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-32" required></textarea>
+                            <textarea name="message" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-32" required></textarea>
                         </div>
                         <button type="submit" class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-dark transition">Send Message</button>
                     </form>

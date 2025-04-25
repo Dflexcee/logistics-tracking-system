@@ -83,6 +83,10 @@ $admin_name = $_SESSION['user_name'] ?? 'Admin';
                     <i class="fas fa-box"></i>
                     <span>Consignments</span>
                 </a>
+                <a href="tickets.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Tickets</span>
+                </a>
                 <a href="update-status.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
                     <i class="fas fa-sync-alt"></i>
                     <span>Update Status</span>
