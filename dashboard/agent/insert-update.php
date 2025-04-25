@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Return success response
         echo json_encode(['success' => true, 'message' => 'Status updated successfully']);
+        header("Location: track-consignment.php");
         exit();
     } catch (Exception $e) {
         // Rollback transaction on error

@@ -1,0 +1,220 @@
+<?php
+require_once 'include/db.php';
+
+// Fetch company details with error handling
+$company = array();
+$company_sql = "SELECT * FROM company_details LIMIT 1";
+$company_result = $conn->query($company_sql);
+
+if ($company_result && $company_result->num_rows > 0) {
+    $company = $company_result->fetch_assoc();
+} else {
+    // Log the error
+    error_log("Error fetching company details: " . $conn->error);
+}
+
+// Default values with more professional content
+$company_name = isset($company['company_name']) ? $company['company_name'] : 'CARGOROVER';
+$company_email = isset($company['email']) ? $company['email'] : 'Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania';
+$company_phone = isset($company['phone']) ? $company['phone'] : '+92 (8800) - 9850';
+$company_address = isset($company['address']) ? $company['address'] : '88 Broklyn Golden Street, New York';
+$company_logo = isset($company['logo']) && file_exists($company['logo']) ? $company['logo'] : 'assets/images/logo.svg';
+
+// Create assets directory if it doesn't exist
+if (!file_exists('assets/images')) {
+    mkdir('assets/images', 0777, true);
+}
+
+// Create a default logo if it doesn't exist
+if (!file_exists($company_logo)) {
+    // Create a simple SVG logo
+    $svg = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60">
+    <rect width="200" height="60" fill="#ffffff"/>
+    <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="20" 
+        fill="#1a365d" text-anchor="middle" dominant-baseline="middle">
+        ' . htmlspecialchars($company_name) . '
+    </text>
+</svg>';
+    
+    file_put_contents('assets/images/logo.svg', $svg);
+    $company_logo = 'assets/images/logo.svg';
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CargoRover - Global Logistics Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('assets/images/hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 80vh;
+        }
+        .play-button {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .play-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="bg-gray-800 text-white py-2">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <a href="mailto:<?php echo htmlspecialchars($company_email); ?>" class="text-sm hover:text-yellow-400">
+                    <i class="fas fa-envelope mr-2"></i><?php echo htmlspecialchars($company_email); ?>
+                </a>
+                <span class="text-sm">
+                    <i class="fas fa-map-marker-alt mr-2"></i><?php echo htmlspecialchars($company_address); ?>
+                </span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-sm hover:text-yellow-400">Help</a>
+                <a href="#" class="text-sm hover:text-yellow-400">Support</a>
+                <a href="contact.php" class="text-sm hover:text-yellow-400">Contact</a>
+                <div class="flex items-center space-x-2 ml-4">
+                    <a href="#" class="hover:text-yellow-400"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="hover:text-yellow-400"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="hover:text-yellow-400"><i class="fab fa-pinterest"></i></a>
+                    <a href="#" class="hover:text-yellow-400"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex items-center">
+                        <img src="<?php echo htmlspecialchars($company_logo); ?>" alt="<?php echo htmlspecialchars($company_name); ?>" class="h-12">
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-800 hover:text-yellow-600 font-medium">Home</a>
+                    <a href="about.html" class="text-gray-800 hover:text-yellow-600 font-medium">About</a>
+                    <a href="services.html" class="text-gray-800 hover:text-yellow-600 font-medium">Services</a>
+                    <a href="contact.php" class="text-gray-800 hover:text-yellow-600 font-medium">Contact</a>
+                    <a href="track.php" class="bg-yellow-500 text-white px-6 py-2 rounded-full hover:bg-yellow-600 transition duration-300">Track & Trace</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section flex items-center">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl">
+                <h2 class="text-yellow-400 text-xl mb-4">SOLUTIONS FOR YOUR TRANSPORT</h2>
+                <h1 class="text-white text-5xl font-bold mb-8">Solutions for Global Shipping</h1>
+                <div class="flex items-center space-x-6">
+                    <a href="services.html" class="bg-yellow-500 text-white px-8 py-3 rounded-full hover:bg-yellow-600 transition duration-300">
+                        Discover More
+                    </a>
+                    <button class="play-button group">
+                        <i class="fas fa-play text-white text-2xl group-hover:text-yellow-400"></i>
+                    </button>
+                    <span class="text-white text-lg">WATCH VIDEO</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-ship text-3xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Global Shipping</h3>
+                    <p class="text-gray-600">Reliable shipping solutions across the globe with real-time tracking and secure handling.</p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-truck text-3xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Land Transport</h3>
+                    <p class="text-gray-600">Efficient ground transportation with extensive network coverage and timely delivery.</p>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-plane text-3xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Air Freight</h3>
+                    <p class="text-gray-600">Fast and secure air freight services for time-sensitive deliveries worldwide.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <img src="<?php echo htmlspecialchars($company_logo); ?>" alt="<?php echo htmlspecialchars($company_name); ?>" class="h-12 mb-4">
+                    <p class="text-gray-400">Your trusted partner in global logistics solutions. Delivering excellence across continents.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="about.html" class="text-gray-400 hover:text-yellow-400">About Us</a></li>
+                        <li><a href="services.html" class="text-gray-400 hover:text-yellow-400">Our Services</a></li>
+                        <li><a href="track.php" class="text-gray-400 hover:text-yellow-400">Track Shipment</a></li>
+                        <li><a href="contact.php" class="text-gray-400 hover:text-yellow-400">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Contact Info</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            <?php echo htmlspecialchars($company_address); ?>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-phone mr-2"></i>
+                            <?php echo htmlspecialchars($company_phone); ?>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-envelope mr-2"></i>
+                            <?php echo htmlspecialchars($company_email); ?>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Newsletter</h4>
+                    <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and offers.</p>
+                    <form class="flex">
+                        <input type="email" placeholder="Your email" class="flex-1 px-4 py-2 rounded-l-lg focus:outline-none">
+                        <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded-r-lg hover:bg-yellow-600">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-12 pt-8 text-center">
+                <p class="text-gray-400">&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($company_name); ?>. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

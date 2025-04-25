@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     weight, dimensions, package_type, special_instructions,
                     status, created_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())";
-
+        
         $stmt = $conn->prepare($sql);
         if ($stmt === false) {
             throw new Exception("Consignment preparation failed: " . $conn->error);
@@ -83,15 +83,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if ($stmt->execute()) {
-            $consignment_id = $conn->insert_id;
-            
+        $consignment_id = $conn->insert_id;
+
             // Add initial tracking status
             $status = "Consignment Created";
             $notes = "Consignment created with tracking number: " . $tracking_number;
             
             $history_sql = "INSERT INTO tracking_history (consignment_id, status, notes, created_at) 
                           VALUES (?, ?, ?, NOW())";
-            $history_stmt = $conn->prepare($history_sql);
+        $history_stmt = $conn->prepare($history_sql);
             $history_stmt->bind_param("iss", $consignment_id, $status, $notes);
             $history_stmt->execute();
 

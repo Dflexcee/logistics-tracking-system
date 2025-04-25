@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Check if form was submitted
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php');
+    header('Location: index.html');
     exit();
 }
 

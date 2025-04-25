@@ -172,7 +172,7 @@ if (!empty($tracking_number)) {
     <nav class="bg-white dark:bg-gray-800 shadow-lg no-print">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center py-4">
-                <a href="index.php" class="text-2xl font-bold text-primary dark:text-white">
+                <a href="index.html" class="text-2xl font-bold text-primary dark:text-white">
                     <?php if (!empty($company_settings['logo_url'])): ?>
                         <img src="<?php echo htmlspecialchars($company_settings['logo_url']); ?>" 
                              alt="<?php echo htmlspecialchars($company_settings['company_name']); ?>" 
@@ -182,11 +182,11 @@ if (!empty($tracking_number)) {
                     <?php endif; ?>
                 </a>
                 <div class="hidden md:flex space-x-8">
-                    <a href="index.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Home</a>
-                    <a href="about.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">About</a>
-                    <a href="services.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Services</a>
-                    <a href="contact.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Contact Us</a>
-                    <a href="track.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Track&Trace</a>
+                    <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Home</a>
+                    <a href="about.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">About</a>
+                    <a href="services.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Services</a>
+                    <a href="contact.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Contact</a>
+                    <a href="track.php" class="text-primary dark:text-blue-400">Track & Trace</a>
                 </div>
                 <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
                     <i class="fas fa-moon dark:hidden"></i>

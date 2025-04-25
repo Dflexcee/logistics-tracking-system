@@ -28,11 +28,11 @@
             <div class="flex space-x-4">
                 <a href="tel:+9288009850" class="flex items-center">
                     <i class="fas fa-phone mr-2"></i>
-                    +92 (8800) - 9850
+                  +15022346880
                 </a>
-                <a href="mailto:support@cargorover.com" class="flex items-center">
+                <a href="mailto:Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania" class="flex items-center">
                     <i class="fas fa-envelope mr-2"></i>
-                    support@cargorover.com
+                    Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania
                 </a>
             </div>
             <div class="flex space-x-4">
@@ -53,7 +53,7 @@
     <nav class="bg-white dark:bg-gray-800 shadow-lg">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center py-4">
-                <a href="index.php" class="text-2xl font-bold text-primary dark:text-white">
+                <a href="index.html" class="text-2xl font-bold text-primary dark:text-white">
                     CARGOROVER
                 </a>
                 <div class="hidden md:flex space-x-8">
@@ -166,9 +166,9 @@
                 <div>
                     <h3 class="text-xl font-bold mb-4">Quick Links</h3>
                     <ul class="space-y-2">
-                        <li><a href="index.php" class="text-gray-400 hover:text-white">Home</a></li>
-                        <li><a href="about.php" class="text-gray-400 hover:text-white">About</a></li>
-                        <li><a href="services.php" class="text-gray-400 hover:text-white">Services</a></li>
+                        <li><a href="index.php" class="text-gray-300 hover:text-white">Home</a></li>
+                        <li><a href="about.php" class="text-gray-300 hover:text-white">About</a></li>
+                        <li><a href="services.php" class="text-gray-300 hover:text-white">Services</a></li>
                         <li><a href="contact.php" class="text-gray-400 hover:text-white">Contact</a></li>
                     </ul>
                 </div>
@@ -190,11 +190,11 @@
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-phone mr-2"></i>
-                            +92 (8800) - 9850
+                          +15022346880
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-envelope mr-2"></i>
-                            support@cargorover.com
+                            Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania
                         </li>
                     </ul>
                 </div>

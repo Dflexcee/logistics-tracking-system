@@ -72,7 +72,7 @@ if ($result->num_rows === 1) {
 
         error_log("Login successful for user: " . $email);
 
-        // Redirect based on role
+        // Redirect based on role with correct paths
         switch ($user['role']) {
             case 'superadmin':
                 header('Location: dashboard/super-admin/index.php');

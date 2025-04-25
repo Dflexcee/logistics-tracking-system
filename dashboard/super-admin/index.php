@@ -1,193 +1,239 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
-    header("Location: ../../login.php");
-    exit();
-}
-
-$is_superadmin = ($_SESSION['user_role'] === 'superadmin');
-$is_agent = ($_SESSION['user_role'] === 'agent');
-
 require_once '../../include/db.php';
 
-// Check if user is logged in and is superadmin
+// Check if user is logged in and is a super-admin
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
     header('Location: ../../login.php');
     exit();
 }
 
 $admin_name = $_SESSION['user_name'] ?? 'Admin';
+
+// Get total number of agents
+$agents_sql = "SELECT COUNT(*) as total_agents FROM users WHERE role = 'agent'";
+$agents_result = $conn->query($agents_sql);
+$total_agents = $agents_result ? $agents_result->fetch_assoc()['total_agents'] : 0;
+
+// Get total number of active consignments
+$consignments_sql = "SELECT COUNT(*) as active_consignments FROM consignments 
+                    WHERE status NOT IN ('Delivered', 'Cancelled')";
+$consignments_result = $conn->query($consignments_sql);
+$active_consignments = $consignments_result ? $consignments_result->fetch_assoc()['active_consignments'] : 0;
+
+// Get total number of users
+$users_sql = "SELECT COUNT(*) as total_users FROM users";
+$users_result = $conn->query($users_sql);
+$total_users = $users_result ? $users_result->fetch_assoc()['total_users'] : 0;
+
+// Get recent activity logs with proper error handling
+$activity_sql = "SELECT al.*, u.name as user_name, al.description as activity_description 
+                FROM activity_logs al 
+                LEFT JOIN users u ON al.user_id = u.id 
+                ORDER BY al.created_at DESC 
+                LIMIT 5";
+$activity_result = $conn->query($activity_sql);
 ?>
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin Dashboard - FLEXCEE Logistics</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Super Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1a365d',
-                        secondary: '#2d3748',
-                        accent: '#e53e3e'
-                    }
-                }
-            }
+    <style>
+        .dashboard-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: #ffffff;
         }
-    </script>
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-item {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-item:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .nav-link {
+            transition: all 0.2s ease;
+            color: #4b5563;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body class="h-full bg-gray-100 dark:bg-gray-900">
-    <!-- Top Navbar -->
-    <nav class="bg-white dark:bg-gray-800 shadow-lg fixed w-full z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<body class="h-full bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-primary dark:text-white">Super Admin Dashboard</h1>
+                    <a href="index.php" class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-truck text-blue-600 mr-2"></i>
+                        Logistics Dashboard
+                    </a>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <!-- Dark Mode Toggle -->
-                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-moon dark:hidden text-gray-600"></i>
-                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
-                    </button>
-                    <!-- User Menu -->
-                    <div class="relative">
-                        <button class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">
-                            <span><?php echo htmlspecialchars($admin_name); ?></span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-gray-600">Welcome, <?php echo htmlspecialchars($admin_name); ?></span>
+                        <a href="../../logout.php" class="text-red-600 hover:text-red-800 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg mt-16 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out z-10">
-        <div class="h-full overflow-y-auto py-4">
-            <nav class="space-y-2 px-2">
-                <a href="index.php" class="flex items-center space-x-2 text-primary dark:text-blue-400 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="agents.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-users"></i>
-                    <span>Agents</span>
-                </a>
-                <a href="consignments.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-box"></i>
-                    <span>Consignments</span>
-                </a>
-                <a href="tickets.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-ticket-alt"></i>
-                    <span>Tickets</span>
-                </a>
-                <a href="update-status.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Update Status</span>
-                </a>
-                <a href="payment-info.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Payment Information</span>
-                </a>
-                <a href="users.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Users</span>
-                </a>
-                <a href="settings.php" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="../../logout.php" class="flex items-center space-x-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </div>
-    </aside>
-
-    <!-- Mobile Menu Button -->
-    <button id="mobileMenuButton" class="fixed bottom-4 right-4 md:hidden bg-primary text-white p-3 rounded-full shadow-lg z-20">
-        <i class="fas fa-bars"></i>
-    </button>
-
     <!-- Main Content -->
-    <main class="md:ml-64 pt-16 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex pt-16">
+        <!-- Sidebar -->
+        <aside class="w-64 fixed h-full bg-white shadow-lg border-r border-gray-200">
+            <div class="p-4">
+                <nav class="space-y-2">
+                    <a href="index.php" class="nav-link active flex items-center px-4 py-3 rounded-lg">
+                        <i class="fas fa-home mr-3"></i> Dashboard
+                    </a>
+                    <a href="consignments.php" class="nav-link flex items-center px-4 py-3 rounded-lg">
+                        <i class="fas fa-box mr-3"></i> Consignments
+                    </a>
+                    <a href="agents.php" class="nav-link flex items-center px-4 py-3 rounded-lg">
+                        <i class="fas fa-users mr-3"></i> Agents
+                    </a>
+                    <a href="tickets.php" class="nav-link flex items-center px-4 py-3 rounded-lg">
+                        <i class="fas fa-ticket-alt mr-3"></i> Tickets
+                    </a>
+                    <a href="settings.php" class="nav-link flex items-center px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog mr-3"></i> Settings
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="flex-1 ml-64 p-8">
             <!-- Welcome Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+            <div class="dashboard-card mb-8 p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">
                     Welcome back, <?php echo htmlspecialchars($admin_name); ?>!
                 </h2>
-                <p class="text-gray-600 dark:text-gray-400">
+                <p class="text-gray-600">
                     Here's what's happening with your logistics system today.
                 </p>
             </div>
 
-            <!-- Dashboard Content -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Quick Stats Cards -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Total Agents</h3>
-                    <p class="text-3xl font-bold text-primary dark:text-blue-400">0</p>
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Total Agents Card -->
+                <div class="dashboard-card rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100">
+                            <i class="fas fa-users text-2xl text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-600">Total Agents</h3>
+                            <p class="text-3xl font-bold text-gray-900"><?php echo $total_agents; ?></p>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Active Consignments</h3>
-                    <p class="text-3xl font-bold text-primary dark:text-blue-400">0</p>
+
+                <!-- Active Consignments Card -->
+                <div class="dashboard-card rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100">
+                            <i class="fas fa-box text-2xl text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-600">Active Consignments</h3>
+                            <p class="text-3xl font-bold text-gray-900"><?php echo $active_consignments; ?></p>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Total Users</h3>
-                    <p class="text-3xl font-bold text-primary dark:text-blue-400">0</p>
+
+                <!-- Total Users Card -->
+                <div class="dashboard-card rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100">
+                            <i class="fas fa-user-shield text-2xl text-purple-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-600">Total Users</h3>
+                            <p class="text-3xl font-bold text-gray-900"><?php echo $total_users; ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="dashboard-card rounded-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        Recent Activity
+                    </h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    <?php if ($activity_result && $activity_result->num_rows > 0): ?>
+                        <?php while ($activity = $activity_result->fetch_assoc()): ?>
+                            <div class="activity-item p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-circle text-blue-500 text-xs"></i>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">
+                                                <?php echo htmlspecialchars($activity['user_name'] ?? 'System'); ?>
+                                            </p>
+                                            <p class="text-sm text-gray-500">
+                                                <?php echo htmlspecialchars($activity['activity_description'] ?? 'No description available'); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        <?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="p-4 text-center text-gray-500">
+                            No recent activity to display
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white dark:bg-gray-800 shadow-lg mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <p class="text-center text-gray-600 dark:text-gray-400">
-                © FLEXCEE Logistics 2025
-            </p>
-        </div>
-    </footer>
-
-    <script>
-        // Dark Mode Toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const html = document.documentElement;
-
-        // Check for saved dark mode preference
-        if (localStorage.getItem('darkMode') === 'true') {
-            html.classList.add('dark');
-        }
-
-        darkModeToggle.addEventListener('click', () => {
-            html.classList.toggle('dark');
-            localStorage.setItem('darkMode', html.classList.contains('dark'));
-        });
-
-        // Mobile Menu Toggle
-        const mobileMenuButton = document.getElementById('mobileMenuButton');
-        const sidebar = document.querySelector('aside');
-
-        mobileMenuButton.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth < 768 && 
-                !sidebar.contains(e.target) && 
-                !mobileMenuButton.contains(e.target)) {
-                sidebar.classList.add('-translate-x-full');
-            }
-        });
-    </script>
+    </div>
 </body>
 </html> 

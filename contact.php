@@ -84,11 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="flex space-x-4">
                 <a href="tel:+9288009850" class="flex items-center">
                     <i class="fas fa-phone mr-2"></i>
-                    +92 (8800) - 9850
+                  +15022346880
                 </a>
-                <a href="mailto:support@cargorover.com" class="flex items-center">
+                <a href="mailto:Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania" class="flex items-center">
                     <i class="fas fa-envelope mr-2"></i>
-                    support@cargorover.com
+                    Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania
                 </a>
             </div>
             <div class="flex space-x-4">
@@ -109,13 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <nav class="bg-white dark:bg-gray-800 shadow-lg">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center py-4">
-                <a href="index.php" class="text-2xl font-bold text-primary dark:text-white">
-                    CARGOROVER
+                <a href="index.html" class="text-2xl font-bold text-primary dark:text-white">
+                    Pick Express
                 </a>
                 <div class="hidden md:flex space-x-8">
-                    <a href="index.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Home</a>
-                    <a href="about.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">About</a>
-                    <a href="services.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Services</a>
+                    <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Home</a>
+                    <a href="about.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">About</a>
+                    <a href="services.html" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Services</a>
                     <a href="contact.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Contact Us</a>
                     <a href="track.php" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white">Track&Trace</a>
                 </div>
@@ -145,17 +145,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                     <i class="fas fa-map-marker-alt text-4xl text-primary mb-4"></i>
                     <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">Our Location</h3>
-                    <p class="text-gray-600 dark:text-gray-300">88 Broklyn Golden Street. New York</p>
+                    <p class="text-gray-600 dark:text-gray-300">Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                     <i class="fas fa-phone text-4xl text-primary mb-4"></i>
                     <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">Phone Number</h3>
-                    <p class="text-gray-600 dark:text-gray-300">+92 (8800) - 9850</p>
+                    <p class="text-gray-600 dark:text-gray-300">fax +1502 234 5880</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                     <i class="fas fa-envelope text-4xl text-primary mb-4"></i>
                     <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">Email Address</h3>
-                    <p class="text-gray-600 dark:text-gray-300">support@cargorover.com</p>
+                    <p class="text-gray-600 dark:text-gray-300">support@pickexpress.vemochemicals.com</p>
                 </div>
             </div>
         </div>
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Our Location</h2>
                     <div class="h-[400px] bg-gray-300 dark:bg-gray-700 rounded-lg">
                         <!-- Add your map iframe or image here -->
-                        <img src="assets/img/map.jpg" alt="Location Map" class="w-full h-full object-cover rounded-lg">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2305.8035788825437!2d25.27231287681509!3d54.69548407271122!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dd9406a3748bdb%3A0x22d62dc9bd0d7abb!2sHotel%20Radisson%20BLU%20Lietuva%2C%20Konstitucijos%20pr.%2020%2C%20Vilnius%2C%2009309%20Vilniaus%20m.%20sav.%2C%20Lithuania!5e0!3m2!1sen!2sng!4v1745614070778!5m2!1sen!2sng" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                     </div>
                 </div>
             </div>
@@ -221,9 +221,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div>
                     <h3 class="text-xl font-bold mb-4">Quick Links</h3>
                     <ul class="space-y-2">
-                        <li><a href="index.php" class="text-gray-400 hover:text-white">Home</a></li>
-                        <li><a href="about.php" class="text-gray-400 hover:text-white">About</a></li>
-                        <li><a href="services.php" class="text-gray-400 hover:text-white">Services</a></li>
+                        <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="about.html" class="text-gray-400 hover:text-white">About</a></li>
+                        <li><a href="services.html" class="text-gray-400 hover:text-white">Services</a></li>
                         <li><a href="contact.php" class="text-gray-400 hover:text-white">Contact</a></li>
                     </ul>
                 </div>
@@ -245,11 +245,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-phone mr-2"></i>
-                            +92 (8800) - 9850
+                          +15022346880
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-envelope mr-2"></i>
-                            support@cargorover.com
+                            Konstitucijos Av. 20, Vilnius, LT-09308, Lithuania
                         </li>
                     </ul>
                 </div>
